@@ -60,3 +60,14 @@ def draw_banner(surface, font, text):
     rect.left = max(0, rect.left)
     rect.right = min(surface.get_width(), rect.right)
     surface.blit(surf, rect)
+
+
+def draw_scoreboard(surface, font, score):
+    """Render 'X:n  Draw:n  O:n' right-aligned in the header strip."""
+    text = f"X:{score['X']}  Draw:{score['draw']}  O:{score['O']}"
+    surf = font.render(text, True, COLOR_TEXT)
+    # Right-align with a small margin; vertically centred in the header strip
+    x = surface.get_width() - surf.get_width() - 10
+    y = (BOARD_TOP - surf.get_height()) // 2
+    surface.blit(surf, (x, y))
+

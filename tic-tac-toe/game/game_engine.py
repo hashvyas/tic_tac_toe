@@ -23,6 +23,11 @@ COMPUTER_SYMBOL = 'O'
 
 class GameEngine:
     def __init__(self):
+        self.score = {'X': 0, 'O': 0, 'draw': 0}
+        self._reset_round()
+
+    def _reset_round(self):
+        """Reset only the per-round state; score is preserved."""
         self.board = [[None] * 3 for _ in range(3)]
         self.current_player = 'X'
         self.round_over = False
@@ -58,24 +63,30 @@ class GameEngine:
     def handle_keydown(self, key):
         import pygame
         if key == pygame.K_r:
-            self.__init__()
+            self._reset_round()
 
     def check_round_end(self):
+        if self.round_over:
+            return   # already settled – do not update scores again
         winner = check_winner(self.board)
         if winner:
             self.round_over = True
             self.winner = winner
+            self.score[winner] += 1
             return
         if is_board_full(self.board):
             self.round_over = True
             self.winner = None   # draw
+            self.score['draw'] += 1
 
     def draw(self, surface, font):
         from game import renderer
         renderer.draw_board(surface, self.board)
         turn_label = "Your turn (X)" if self.current_player == HUMAN_SYMBOL else "Computer's turn (O)"
         renderer.draw_text(surface, font, turn_label, (10, 20))
+        renderer.draw_scoreboard(surface, font, self.score)
 
         if self.round_over:
             text = f"{self.winner} wins!" if self.winner else "Draw!"
             renderer.draw_banner(surface, font, f"{text} Press R for a new round.")
+

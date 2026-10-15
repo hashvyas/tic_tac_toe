@@ -106,21 +106,24 @@ def test_click_on_empty_cell_places_symbol_during_active_round():
 
 
 def test_restart_with_r_clears_round_over():
-    """Pressing R resets round_over to False, re-enabling clicks."""
+    """Pressing R resets board/turn/winner but preserves the scoreboard."""
     import pygame
     pygame.init()
 
     engine = GameEngine()
     engine.round_over = True
     engine.winner = 'X'
+    score_before = dict(engine.score)   # snapshot current score
 
     engine.handle_keydown(pygame.K_r)
 
     assert engine.round_over is False
     assert engine.winner is None
     assert engine.board == [[None] * 3 for _ in range(3)]
+    assert engine.score == score_before, "Score must not change when starting a new round"
 
     pygame.quit()
+
 
 
 # ---------------------------------------------------------------------------
@@ -192,3 +195,112 @@ def test_clicking_cell_with_X_does_not_overwrite():
 
     assert engine.board[0][0] == 'X', "X must not be overwritten"
     assert engine.current_player == player_before, "Turn must not advance after a blocked click"
+
+
+# ---------------------------------------------------------------------------
+# Task 2: scoreboard
+# ---------------------------------------------------------------------------
+
+def test_x_win_increments_only_x_score():
+    """check_round_end on an X-win board increments score['X'] by 1 only."""
+    engine = GameEngine()
+    engine.board = [
+        ['X', 'X', 'X'],
+        ['O', 'O', None],
+        [None, None, None],
+    ]
+    engine.check_round_end()
+
+    assert engine.score['X'] == 1
+    assert engine.score['O'] == 0
+    assert engine.score['draw'] == 0
+
+
+def test_o_win_increments_only_o_score():
+    """check_round_end on an O-win board increments score['O'] by 1 only."""
+    engine = GameEngine()
+    engine.board = [
+        ['O', 'O', 'O'],
+        ['X', 'X', None],
+        [None, None, None],
+    ]
+    engine.check_round_end()
+
+    assert engine.score['X'] == 0
+    assert engine.score['O'] == 1
+    assert engine.score['draw'] == 0
+
+
+def test_draw_increments_only_draw_score():
+    """check_round_end on a full board with no winner increments score['draw'] only."""
+    engine = GameEngine()
+    engine.board = [
+        ['X', 'O', 'X'],
+        ['O', 'X', 'O'],
+        ['O', 'X', 'O'],
+    ]
+    engine.check_round_end()
+
+    assert engine.score['X'] == 0
+    assert engine.score['O'] == 0
+    assert engine.score['draw'] == 1
+
+
+def test_new_round_preserves_scoreboard():
+    """Pressing R (new round) clears board/turn/winner but keeps all scores."""
+    import pygame
+    pygame.init()
+
+    engine = GameEngine()
+    # Manually set a known score to simulate previous rounds
+    engine.score = {'X': 2, 'O': 1, 'draw': 0}
+    engine.round_over = True
+    engine.winner = 'X'
+
+    engine.handle_keydown(pygame.K_r)
+
+    assert engine.round_over is False
+    assert engine.winner is None
+    assert engine.board == [[None] * 3 for _ in range(3)]
+    assert engine.score == {'X': 2, 'O': 1, 'draw': 0}, (
+        "Score must be preserved across rounds"
+    )
+
+    pygame.quit()
+
+
+def test_score_not_incremented_twice_for_same_round():
+    """Calling check_round_end repeatedly on a finished round must not increment score again."""
+    engine = GameEngine()
+    engine.board = [
+        ['X', 'X', 'X'],
+        ['O', 'O', None],
+        [None, None, None],
+    ]
+    engine.check_round_end()   # first call – should score
+    engine.check_round_end()   # second call – must be a no-op
+    engine.check_round_end()   # third call – must be a no-op
+
+    assert engine.score['X'] == 1, "Score must only be incremented once per round"
+
+
+def test_multiple_rounds_accumulate_scores():
+    """Scores accumulate correctly across several consecutive rounds."""
+    engine = GameEngine()
+
+    # Round 1 – X wins
+    engine.board = [['X', 'X', 'X'], ['O', 'O', None], [None, None, None]]
+    engine.check_round_end()
+    engine._reset_round()
+
+    # Round 2 – O wins
+    engine.board = [['O', 'O', 'O'], ['X', 'X', None], [None, None, None]]
+    engine.check_round_end()
+    engine._reset_round()
+
+    # Round 3 – draw
+    engine.board = [['X', 'O', 'X'], ['O', 'X', 'O'], ['O', 'X', 'O']]
+    engine.check_round_end()
+    engine._reset_round()
+
+    assert engine.score == {'X': 1, 'O': 1, 'draw': 1}
