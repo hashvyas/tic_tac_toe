@@ -53,5 +53,10 @@ def draw_text(surface, font, text, pos, color=COLOR_TEXT):
 
 def draw_banner(surface, font, text):
     surf = font.render(text, True, (180, 40, 40))
-    rect = surf.get_rect(center=(surface.get_width() // 2, BOARD_TOP + BOARD_SIZE + 40))
+    board_bottom = BOARD_TOP + BOARD_SIZE          # y = 460
+    strip_center_y = (board_bottom + surface.get_height()) // 2  # midpoint of remaining strip
+    rect = surf.get_rect(center=(surface.get_width() // 2, strip_center_y))
+    # Clamp horizontally so long strings never extend past the window edges
+    rect.left = max(0, rect.left)
+    rect.right = min(surface.get_width(), rect.right)
     surface.blit(surf, rect)
