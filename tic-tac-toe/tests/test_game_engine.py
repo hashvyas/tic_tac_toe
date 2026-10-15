@@ -121,3 +121,46 @@ def test_restart_with_r_clears_round_over():
     assert engine.board == [[None] * 3 for _ in range(3)]
 
     pygame.quit()
+
+
+# ---------------------------------------------------------------------------
+# Bug 2: winning move on the final empty cell must be a win, not a draw
+# ---------------------------------------------------------------------------
+
+def test_winning_move_on_last_cell_is_a_win_not_a_draw():
+    """X completes a row on the 9th (last) cell – must be declared a win."""
+    engine = GameEngine()
+    # Board: 8 cells filled, (0,2) is the only empty cell.
+    # Placing X there completes row 0 → X wins.
+    engine.board = [
+        ['X', 'X', None],   # (0,2) will complete the row
+        ['O', 'O', 'X'],
+        ['O', 'X', 'O'],
+    ]
+    engine.check_round_end()   # board not yet full – no result expected yet
+
+    # Now place the winning final move directly and call check_round_end
+    engine.board[0][2] = 'X'
+    engine.check_round_end()
+
+    assert engine.round_over is True
+    assert engine.winner == 'X', (
+        "A win on the last cell must set winner='X', not trigger a draw"
+    )
+
+
+def test_full_board_with_no_winner_is_a_draw():
+    """A completely filled board with no three-in-a-row is correctly a draw."""
+    engine = GameEngine()
+    # Classic drawn configuration – no winner in any direction
+    engine.board = [
+        ['X', 'O', 'X'],
+        ['O', 'X', 'O'],
+        ['O', 'X', 'O'],
+    ]
+    engine.check_round_end()
+
+    assert engine.round_over is True
+    assert engine.winner is None, (
+        "A full board with no winner must set winner=None (draw)"
+    )

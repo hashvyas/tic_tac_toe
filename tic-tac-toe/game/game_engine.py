@@ -59,14 +59,14 @@ class GameEngine:
             self.__init__()
 
     def check_round_end(self):
-        if is_board_full(self.board):        # BUG: checked before looking for a winner
-            self.round_over = True
-            self.winner = None
-            return
         winner = check_winner(self.board)
         if winner:
             self.round_over = True
             self.winner = winner
+            return
+        if is_board_full(self.board):
+            self.round_over = True
+            self.winner = None   # draw
 
     def draw(self, surface, font):
         from game import renderer
