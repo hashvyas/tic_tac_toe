@@ -29,6 +29,8 @@ class GameEngine:
         self.winner = None   # 'X', 'O', or None (meaning draw, only valid when round_over)
 
     def handle_click(self, pos):
+        if self.round_over:
+            return   # round finished – ignore all clicks until R is pressed
         if self.current_player != HUMAN_SYMBOL:
             return   # not your turn - the computer is about to move (or already has)
         cell = board_pos_to_cell(pos)
