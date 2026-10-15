@@ -6,11 +6,11 @@ plays O and moves automatically right after you, using a simple
 random-move AI (see game/ai.py) - this is given infrastructure, not
 something you need to build.
 
-Starter version: no scoreboard yet, no first-player choice, and only
-one combined reset control. Win/draw detection has known bugs (see
-game/rules.py and check_round_end below) that Task 1 asks you to fix,
-and move validation has a known gap (see handle_click) that Task 3
-asks you to fix.
+Controls
+--------
+  R  – restart current round (preserves scoreboard)
+  M  – reset entire match   (clears scoreboard)
+  F  – toggle which player moves first (takes effect on next round)
 """
 
 from game.rules import check_winner, is_board_full
@@ -24,14 +24,17 @@ COMPUTER_SYMBOL = 'O'
 class GameEngine:
     def __init__(self):
         self.score = {'X': 0, 'O': 0, 'draw': 0}
+        self.first_player = HUMAN_SYMBOL   # 'X' or 'O'; preserved across rounds
         self._reset_round()
 
     def _reset_round(self):
-        """Reset only the per-round state; score is preserved."""
+        """Reset only the per-round state; score and first_player are preserved."""
         self.board = [[None] * 3 for _ in range(3)]
-        self.current_player = 'X'
+        self.current_player = self.first_player
         self.round_over = False
         self.winner = None   # 'X', 'O', or None (meaning draw, only valid when round_over)
+        # If O starts, the computer makes the opening move immediately.
+        self._maybe_take_computer_turn()
 
     def handle_click(self, pos):
         if self.round_over:
@@ -63,6 +66,17 @@ class GameEngine:
     def handle_keydown(self, key):
         import pygame
         if key == pygame.K_r:
+            self._reset_round()                 # new round – keep score
+        elif key == pygame.K_m:
+            self.__init__()                     # full match reset (clears score and board)
+        elif key == pygame.K_f:
+            # Toggle which player moves first and restart the round immediately
+            # so the new setting takes effect without requiring another R press.
+            # If O is now first, _reset_round() will call _maybe_take_computer_turn()
+            # and fire exactly one opening move.
+            self.first_player = (COMPUTER_SYMBOL
+                                 if self.first_player == HUMAN_SYMBOL
+                                 else HUMAN_SYMBOL)
             self._reset_round()
 
     def check_round_end(self):
@@ -83,10 +97,9 @@ class GameEngine:
         from game import renderer
         renderer.draw_board(surface, self.board)
         turn_label = "Your turn (X)" if self.current_player == HUMAN_SYMBOL else "Computer's turn (O)"
-        renderer.draw_text(surface, font, turn_label, (10, 20))
-        renderer.draw_scoreboard(surface, font, self.score)
+        renderer.draw_header(surface, font, turn_label, self.score, self.first_player)
 
         if self.round_over:
             text = f"{self.winner} wins!" if self.winner else "Draw!"
-            renderer.draw_banner(surface, font, f"{text} Press R for a new round.")
+            renderer.draw_banner(surface, font, text)
 
