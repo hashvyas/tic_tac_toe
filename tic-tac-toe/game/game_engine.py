@@ -37,7 +37,9 @@ class GameEngine:
         if cell is None:
             return
         row, col = cell
-        self.board[row][col] = self.current_player   # BUG: doesn't check if the cell is already occupied
+        if self.board[row][col] is not None:
+            return   # cell already occupied – ignore the click
+        self.board[row][col] = self.current_player
         self.check_round_end()
         self.current_player = 'O' if self.current_player == 'X' else 'X'
         self._maybe_take_computer_turn()

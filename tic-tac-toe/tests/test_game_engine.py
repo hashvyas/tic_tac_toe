@@ -164,3 +164,31 @@ def test_full_board_with_no_winner_is_a_draw():
     assert engine.winner is None, (
         "A full board with no winner must set winner=None (draw)"
     )
+
+
+# ---------------------------------------------------------------------------
+# Bug 4: clicking an occupied cell must not overwrite its symbol or advance turn
+# ---------------------------------------------------------------------------
+
+def test_clicking_cell_with_O_does_not_overwrite():
+    """Clicking a cell that contains O must leave it as O and keep X's turn."""
+    engine = GameEngine()
+    engine.board[1][1] = 'O'   # plant an O in the centre
+    player_before = engine.current_player   # 'X'
+
+    click(engine, 1, 1)   # X tries to overwrite O
+
+    assert engine.board[1][1] == 'O', "O must not be overwritten by X"
+    assert engine.current_player == player_before, "Turn must not advance after a blocked click"
+
+
+def test_clicking_cell_with_X_does_not_overwrite():
+    """Clicking a cell that contains X must leave it as X and keep X's turn."""
+    engine = GameEngine()
+    engine.board[0][0] = 'X'   # plant an X in the corner
+    player_before = engine.current_player   # 'X'
+
+    click(engine, 0, 0)   # X tries to click its own cell
+
+    assert engine.board[0][0] == 'X', "X must not be overwritten"
+    assert engine.current_player == player_before, "Turn must not advance after a blocked click"
